@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+#include "esp_sleep.h"
 #include "info.h"
 
 /**
@@ -10,6 +11,9 @@ const char *password, the wifi password
 const char* botToken, the telegram bot token (@BotFather)
 const char* chat_id, the telegram chat id (@userinfobot)
 */
+
+constexpr gpio_num_t WAKEUP_PIN = GPIO_NUM_33;
+constexpr int LED_PIN = GPIO_NUM_2;
 
 void setup() {
   Serial.begin(115200);
@@ -37,6 +41,24 @@ void setup() {
     }
     http.end();
   }
+
+  // Visual debug
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
+  delay(10000);
+  digitalWrite(LED_PIN, LOW);
+
+  pinMode(WAKEUP_PIN, INPUT);
+  /*
+  rtc_gpio_pullup_dis(WAKEUP_PIN);
+  rtc_gpio_pulldown_en(WAKEUP_PIN);
+  rtc_gpio_init(WAKEUP_PIN);
+  rtc_gpio_set_direction(WAKEUP_PIN, RTC_GPIO_MODE_INPUT_ONLY);
+  */
+
+  Serial.println("Going to hibernation. Wake up on LOW signal on GPIO 33.");
+  esp_sleep_enable_ext0_wakeup(WAKEUP_PIN, 1);
+  esp_deep_sleep_start();
 }
 
 void loop() {
