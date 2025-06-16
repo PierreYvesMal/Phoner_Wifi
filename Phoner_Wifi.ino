@@ -56,7 +56,7 @@ void setup() {
   rtc_gpio_set_direction(WAKEUP_PIN, RTC_GPIO_MODE_INPUT_ONLY);
   */
 
-  Serial.println("Going to hibernation. Wake up on LOW signal on GPIO 33.");
+  Serial.println("Going to hibernation. Wake up on HIGH signal on GPIO 33.");
   esp_sleep_enable_ext0_wakeup(WAKEUP_PIN, 1);
   esp_deep_sleep_start();
 }
