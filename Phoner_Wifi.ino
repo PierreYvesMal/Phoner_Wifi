@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+#include "driver/rtc_io.h"
 #include "esp_sleep.h"
 #include "info.h"
 
@@ -12,7 +13,7 @@ const char* botToken, the telegram bot token (@BotFather)
 const char* chat_id, the telegram chat id (@userinfobot)
 */
 
-constexpr gpio_num_t WAKEUP_PIN = GPIO_NUM_33;
+constexpr gpio_num_t BTN_GPIO = GPIO_NUM_6 ;
 constexpr int LED_PIN = GPIO_NUM_2;
 
 void setup() {
@@ -48,7 +49,7 @@ void setup() {
   delay(10000);
   digitalWrite(LED_PIN, LOW);
 
-  pinMode(WAKEUP_PIN, INPUT);
+  pinMode(BTN_GPIO, INPUT);
   /*
   rtc_gpio_pullup_dis(WAKEUP_PIN);
   rtc_gpio_pulldown_en(WAKEUP_PIN);
@@ -56,8 +57,12 @@ void setup() {
   rtc_gpio_set_direction(WAKEUP_PIN, RTC_GPIO_MODE_INPUT_ONLY);
   */
 
-  Serial.println("Going to hibernation. Wake up on HIGH signal on GPIO 33.");
-  esp_sleep_enable_ext0_wakeup(WAKEUP_PIN, 1);
+  esp_sleep_enable_ext1_wakeup((1ULL << BTN_GPIO), ESP_EXT1_WAKEUP_ANY_HIGH);
+  // esp_sleep_enable_ext0_wakeup(BTN_GPIO, 1); // wake up if BTN pressed 
+                                                // idt does not work ?? https://github.com/espressif/esp-idf/issues/11932
+  rtc_gpio_pulldown_en(BTN_GPIO);  // GPIO6 is tie to GND in order to wake up in HIGH
+  rtc_gpio_pullup_dis(BTN_GPIO);   // Disable PULL_UP in order to allow it to wakeup on HIGH
+  // reminder : COM port is disabled, so board does show disconnected in IDE
   esp_deep_sleep_start();
 }
 
