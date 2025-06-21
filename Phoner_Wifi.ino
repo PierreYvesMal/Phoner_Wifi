@@ -7,8 +7,17 @@
 
 /**
 Current directory should contain "info.h" defining:
-const char *ssid, the wifi ssid
-const char *password, the wifi password
+struct WifiIds
+{
+  const char* ssid;
+  const char* password;
+};
+constexpr WifiIds wifiIds[] =
+{
+  {"SSID1", "PWD1"}, // Maison parents
+  {"SSID2", "PWD2"}, // Maison Loncin
+};
+
 const char* botToken, the telegram bot token (@BotFather)
 const char* chat_id, the telegram chat id (@userinfobot)
 */
@@ -16,18 +25,15 @@ const char* chat_id, the telegram chat id (@userinfobot)
 constexpr gpio_num_t BTN_GPIO = GPIO_NUM_6 ;
 constexpr int LED_PIN = GPIO_NUM_2;
 
+constexpr int MAX_TENTATIVES = 5;
+
+bool ConnectToWifi();
+
 void setup() {
   Serial.begin(115200);
-  WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  };
-
-  Serial.println("\nWiFi connected");
-
-  if (WiFi.status() == WL_CONNECTED) {
+  if (ConnectToWifi())
+  {
     HTTPClient http;
     String message = "PHONER_EMERGENCY";
     String url = String("https://api.telegram.org/bot") + botToken +
@@ -68,4 +74,37 @@ void setup() {
 
 void loop() {
   // nothing
+}
+
+bool ConnectToWifi()
+{
+  for (int i = 0; i < N_WIFI; ++i) 
+  {
+    int tentative = 0;
+    const char* ssid = wifiIds[i].ssid;
+    const char* password = wifiIds[i].password;
+
+    Serial.println("Attempting to connect to wifi:");
+    Serial.print("\t"); Serial.println(ssid);
+    Serial.print("\t"); Serial.println(password);
+
+    WiFi.begin(ssid, password);
+
+    while ( (WiFi.status() != WL_CONNECTED) && (tentative++ < MAX_TENTATIVES) )
+    {
+      delay(500);
+      Serial.print(".");
+    };
+    Serial.println("");
+
+    if(WiFi.status() == WL_CONNECTED)
+    {
+      Serial.println("\nWiFi connected");
+      return true;
+    }
+
+    WiFi.disconnect(true);  // true = erase old config
+    delay(100); // give some time to cleanly disconnect
+  }
+  return false;
 }
